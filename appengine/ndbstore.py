@@ -156,7 +156,7 @@ class NDBStore(Store):
 
     def triples(self, (s, p, o), context=None):
         """A generator over all the triples matching """
-        assert context is None, "Context associated with %s %s %s is not None but %s!" % (s, p, o, context)
+        #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         if o is None or isinstance(o, term.Literal):
             for item in LiteralTriple.matching_query(self._graph_key, s, p, o):
                 yield item.toRdflib()
@@ -176,17 +176,15 @@ class NDBStore(Store):
         self._graph.put()
 
     def namespace(self, prefix):
-        index = self._graph.prefixes.index(prefix)
-        if index > -1:
-            return self._graph.namespaces[index]
-        else:
+        try: 
+            return self._graph.namespaces[self._graph.prefixes.index(prefix)]
+        except ValueError:
             return None
 
     def prefix(self, namespace):
-        index = self._graph.namespaces.index(namespace)
-        if index > -1:
-            return self._graph.prefixes[index]
-        else:
+        try: 
+            return self._graph.prefixes[self._graph.namespaces.index(namespace)]
+        except ValueError:
             return None
 
     def namespaces(self):
