@@ -1,7 +1,5 @@
 import webapp2
 from rdflib import Graph
-from google.appengine.api import memcache
-import logging
 from appengine.ndbstore import NDBStore
 
 _GRAPH_ID = 'default-graph'
@@ -30,25 +28,11 @@ application = webapp2.WSGIApplication([
 ], debug=True)
 
 def update(q):
-    g = get_data()
-    g.update(q)
-    set_data(g)
+    graph().update(q)
     
 def query(q):
-    return get_data().query(q).serialize(format='json')
+    return graph().query(q).serialize(format='json')
     
-def get_data():
-    data = memcache.Client().get(_GRAPH_INSTANCE_ID)
-    if data is not None:
-        logging.info("Hit")
-        return data
-    else:
-        logging.info("Miss")
-        g = Graph(store = NDBStore(identifier = _GRAPH_ID))
-        memcache.Client().add(_GRAPH_INSTANCE_ID, g)
-        return g
-    
-def set_data(g):
-    memcache.Client().set(_GRAPH_INSTANCE_ID, g)
-    logging.info("Stored")
+def graph():
+    return Graph(store = NDBStore(identifier = _GRAPH_ID))
 

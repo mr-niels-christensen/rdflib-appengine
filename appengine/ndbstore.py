@@ -9,7 +9,6 @@ This code borrows heavily from the Memory Store class by Michel Pelletier, Danie
 from rdflib.store import Store
 from rdflib import term
 from google.appengine.ext import ndb
-import logging
 
 ANY = Any = None
 
@@ -132,7 +131,6 @@ class NDBStore(Store):
         #Note: quads is a generator, not a list. It cannot be traversed twice.
         triples = [(LiteralTriple if isinstance(o, term.Literal) else NonLiteralTriple).create(self._graph_key, s, p, o) 
                    for (s, p, o, _) in quads]
-        logging.info('%s: %s' % (len(triples), repr(triples)))
         ndb.put_multi(triples)
 
     def add(self, (subject, predicate, o), context, quoted=False):
