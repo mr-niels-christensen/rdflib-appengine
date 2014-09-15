@@ -14,28 +14,23 @@ ANY = Any = None
 
 class RdfGraph(ndb.Model):
     '''Use this a ancestor for all triples etc. in the graph
+       The entity itself records pairs of (prefix, namespace)
+       as two lists of Strings.
     '''
     prefixes = ndb.StringProperty(repeated = True)
     namespaces = ndb.StringProperty(repeated = True)
 
-class BNodeSubject(ndb.Model):
-    pass
-
-class URIRefSubject(ndb.Model):
-    pass
-
-class RdfProperty(ndb.Model):
-    pass
-
 class NonLiteralTriple(ndb.Model):
-    #Subject is the ancestor^2
-    #Property is the immediate ancestor
-    triple_object = ndb.KeyProperty()
+    rdf_subject = ndb.StringProperty()
+    rdf_property = ndb.StringProperty()
+    rdf_object = ndb.StringProperty()
     
 class LiteralTriple(ndb.Model):
-    triple_object_lexical = ndb.StringProperty()
-    triple_object_datatype = ndb.StringProperty()
-    triple_object_language = ndb.StringProperty()
+    rdf_subject = ndb.StringProperty()
+    rdf_property = ndb.StringProperty()
+    rdf_object_lexical = ndb.StringProperty()
+    rdf_object_datatype = ndb.StringProperty()
+    rdf_object_language = ndb.StringProperty()
 
 class NDBStore(Store):
     """\
@@ -56,18 +51,22 @@ class NDBStore(Store):
         for s, p, o, c in quads:
             assert c is None, \
                 "Context associated with %s %s %s is not None but %s!" % (s, p, o, c)
-        #TODO: Use put_multi
-        #TODO: Avoid inserting existing triples?
-        for s, p, o, _ in quads:
-            parent_key = self._key_for_subject_property(s, p)
-            if isinstance(o, term.Literal):
-                LiteralTriple(parent = parent_key, 
-                              triple_object_lexical = unicode(o),
-                              triple_object_datatype = o.datatype,
-                              triple_object_language = o.language).put()
-            else:
-                NonLiteralTriple(parent = parent_key, 
-                                 triple_object = self._key_for_entity(o)).put()
+        #Convert rdflib tirples to NDB triples
+        lit_triples = [LiteralTriple(parent = self._graph_key, 
+                                     rdf_subject = unicode(s),
+                                     rdf_property = unicode(p),
+                                     rdf_object_lexical = unicode(o),
+                                     rdf_object_datatype = o.datatype,
+                                     rdf_object_language = o.language) 
+                       for (s, p, o, _) in quads if isinstance(o, term.Literal)]
+        nonlit_triples = [NonLiteralTriple(parent = self._graph_key, 
+                                           rdf_subject = unicode(s),
+                                           rdf_property = unicode(p),
+                                           rdf_object = unicode(o)) 
+                          for (s, p, o, _) in quads if isinstance(o, term.Literal)]
+        #Insert all the triples in one operation because NDB may allow only one write operation per graph per second. 
+        #See bottom of https://developers.google.com/appengine/docs/python/datastore/structuring_for_strong_consistency
+        ndb.put_multi(lit_triples + nonlit_triples)
 
     def add(self, (subject, predicate, o), context, quoted=False):
         """\
@@ -80,16 +79,16 @@ class NDBStore(Store):
         if isinstance(o, term.Literal):
             query = (
                 LiteralTriple
-                .query(ancestor = self._key_for_subject_property(s, p))
-                .filter(ndb.AND(LiteralTriple.triple_object_lexical == unicode(o),
-                                LiteralTriple.triple_object_datatype == o.datatype,
-                                LiteralTriple.triple_object_language == o.language))
+                .query(ancestor = self._graph_key)
+                .filter(ndb.AND(LiteralTriple.rdf_object_lexical == unicode(o),
+                                LiteralTriple.rdf_object_datatype == o.datatype,
+                                LiteralTriple.rdf_object_language == o.language))
                   )
         else:
             query = (
                       NonLiteralTriple
-                      .query(ancestor = self._key_for_subject_property(s, p))
-                      .filter(NonLiteralTriple.triple_object == self._key_for_entity(o))
+                      .query(ancestor = self._graph_key)
+                      .filter(NonLiteralTriple.triple_object == unicode(o))
                       )
         for key in query.run(keys_only = True):
             key.delete()
