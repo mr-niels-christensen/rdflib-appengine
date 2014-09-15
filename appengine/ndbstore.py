@@ -75,14 +75,14 @@ class LiteralTriple(ndb.Model):
     @staticmethod
     def create(graph_key, s, p, o):
         assert isinstance(o, term.Literal), "Trying to store a Literal in a NonLiteralTriple: %s %s %s %s" % (graph_key, s, p, o)
-        return NonLiteralTriple(parent = graph_key, 
-                                rdf_subject = unicode(s),
-                                rdf_subject_is_blank = isinstance(s, term.BNode),
-                                rdf_property = unicode(p),
-                                rdf_object_lexical = unicode(o),
-                                rdf_object_datatype = o.datatype(),
-                                rdf_object_language = o.language()
-                                )
+        return LiteralTriple(parent = graph_key, 
+                             rdf_subject = unicode(s),
+                             rdf_subject_is_blank = isinstance(s, term.BNode),
+                             rdf_property = unicode(p),
+                             rdf_object_lexical = unicode(o)[0:400],#TODO Store data
+                             rdf_object_datatype = o.datatype,
+                             rdf_object_language = o.language
+                             )
         
     def toRdflib(self):
         return (_blank_or_uri(self.rdf_subject, self.rdf_subject_is_blank),
@@ -132,7 +132,7 @@ class NDBStore(Store):
         lit_triples = [LiteralTriple.create(self._graph_key, s, p, o) 
                        for (s, p, o, _) in quads if isinstance(o, term.Literal)]
         nonlit_triples = [NonLiteralTriple.create(self._graph_key, s, p, o)
-                          for (s, p, o, _) in quads if isinstance(o, term.Literal)]
+                          for (s, p, o, _) in quads if not isinstance(o, term.Literal)]
         #Insert all the triples in one operation because NDB may allow only one write operation per graph per second. 
         #See bottom of https://developers.google.com/appengine/docs/python/datastore/structuring_for_strong_consistency
         ndb.put_multi(lit_triples + nonlit_triples)
@@ -157,10 +157,10 @@ class NDBStore(Store):
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         if o is None or isinstance(o, term.Literal):
             for item in LiteralTriple.matching_query(self._graph_key, s, p, o):
-                yield item.toRdflib()
+                yield item.toRdflib(), self.__contexts()
         if o is None or not isinstance(o, term.Literal):
             for item in NonLiteralTriple.matching_query(self._graph_key, s, p, o):
-                yield item.toRdflib()
+                yield item.toRdflib(), self.__contexts()
         
     def __len__(self, context=None): #TODO: Optimize
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
@@ -190,4 +190,7 @@ class NDBStore(Store):
             yield prefix, namespace
 
     def __contexts(self):
-        return (c for c in [])  # TODO: best way to return empty generator
+        '''Empty generator
+        '''
+        if False:
+            yield
