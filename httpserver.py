@@ -18,8 +18,15 @@ class MainPage(webapp2.RequestHandler):
         update(self.request.body)
         self.response.set_status(201)
 
+class FourOhFour(webapp2.RequestHandler):
+    def get(self):
+        #Access-Control-Allow-Origin: *
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.set_status(404)
+
 application = webapp2.WSGIApplication([
-    ('/.*', MainPage),
+    ('/ds/.*', MainPage),
+    ('/.*', FourOhFour),
 ], debug=True)
 
 def update(q):

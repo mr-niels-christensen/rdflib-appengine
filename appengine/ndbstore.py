@@ -127,9 +127,7 @@ class NDBStore(Store):
             self._graph.put()
 
     def addN(self, quads):
-        for s, p, o, c in quads:
-            assert c is None, \
-                "Context associated with %s %s %s is not None but %s!" % (s, p, o, c)
+        #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         #Convert rdflib tirples to NDB triples
         lit_triples = [LiteralTriple.create(self._graph_key, s, p, o) 
                        for (s, p, o, _) in quads if isinstance(o, term.Literal)]
@@ -146,7 +144,7 @@ class NDBStore(Store):
         self.addN([(subject, predicate, o, context)])
 
     def remove(self, (s, p, o), context=None):
-        assert context is None, "Context not supported"
+        #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         if isinstance(o, term.Literal):
             query = LiteralTriple.matching_query(self._graph_key, s, p, o)
         else:
@@ -165,7 +163,7 @@ class NDBStore(Store):
                 yield item.toRdflib()
         
     def __len__(self, context=None): #TODO: Optimize
-        assert context is None, "Context not supported"
+        #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         return ( NonLiteralTriple.matching_query(self._graph_key, None, None, None).count()
                  + LiteralTriple.matching_query(self._graph_key, None, None, None).count()
                  )
