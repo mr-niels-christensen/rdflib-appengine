@@ -164,20 +164,34 @@ class NDBStore(Store):
             for item in NonLiteralTriple.matching_query(self._graph_key, s, p, o):
                 yield item.toRdflib()
         
-    def __len__(self, context=None):
-        assert False, "Not implemented yet"
+    def __len__(self, context=None): #TODO: Optimize
+        assert context is None, "Context not supported"
+        return ( NonLiteralTriple.matching_query(self._graph_key, None, None, None).count()
+                 + LiteralTriple.matching_query(self._graph_key, None, None, None).count()
+                 )
 
-    def bind(self, prefix, namespace):
-        assert False, "Not implemented yet"
+    def bind(self, prefix, namespace): #TODO is namespace allowed to be None?
+        self._graph.prefixes = [prefix] + self._graph.prefixes
+        self._graph.namespaces = [prefix] + self._graph.namespaces
+        self._graph.put()
 
     def namespace(self, prefix):
-        assert False, "Not implemented yet"
+        index = self._graph.prefixes.index(prefix)
+        if index > -1:
+            return self._graph.namespaces[index]
+        else:
+            return None
 
     def prefix(self, namespace):
-        assert "Not implemented yet"
+        index = self._graph.namespaces.index(namespace)
+        if index > -1:
+            return self._graph.prefixes[index]
+        else:
+            return None
 
     def namespaces(self):
-        assert False, "Not implemented yet"
+        for prefix, namespace in zip(self._graph.prefixes, self._graph.namespaces):
+            yield prefix, namespace
 
     def __contexts(self):
         return (c for c in [])  # TODO: best way to return empty generator
