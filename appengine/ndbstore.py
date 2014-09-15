@@ -9,6 +9,7 @@ This code borrows heavily from the Memory Store class by Michel Pelletier, Danie
 from rdflib.store import Store
 from rdflib import term
 from google.appengine.ext import ndb
+import logging
 
 ANY = Any = None
 
@@ -128,14 +129,11 @@ class NDBStore(Store):
 
     def addN(self, quads):
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
-        #Convert rdflib tirples to NDB triples
-        lit_triples = [LiteralTriple.create(self._graph_key, s, p, o) 
-                       for (s, p, o, _) in quads if isinstance(o, term.Literal)]
-        nonlit_triples = [NonLiteralTriple.create(self._graph_key, s, p, o)
-                          for (s, p, o, _) in quads if not isinstance(o, term.Literal)]
-        #Insert all the triples in one operation because NDB may allow only one write operation per graph per second. 
-        #See bottom of https://developers.google.com/appengine/docs/python/datastore/structuring_for_strong_consistency
-        ndb.put_multi(lit_triples + nonlit_triples)
+        #Note: quads is a generator, not a list. It cannot be traversed twice.
+        triples = [(LiteralTriple if isinstance(o, term.Literal) else NonLiteralTriple).create(self._graph_key, s, p, o) 
+                   for (s, p, o, _) in quads]
+        logging.info('%s: %s' % (len(triples), repr(triples)))
+        ndb.put_multi(triples)
 
     def add(self, (subject, predicate, o), context, quoted=False):
         """\
