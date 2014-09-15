@@ -20,7 +20,9 @@ clean:
 	rm -f ./rdflib ./pkg_resources.py ./six.py ./pyparsing.py ./isodate ./html5lib ./SPARQLWrapper
 	rm -rf libs/
 	mkdir libs
-
+.PHONY: deploy
+deploy:
+	appcfg.py update .
     
 
     
