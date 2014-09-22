@@ -10,9 +10,9 @@ _BIG_LITERAL = Literal('x' * 1500)
 _TRIPLES = [(s, p, o) for [s, p, o] in itertools.product([URIRef('http://s%d' % i) for i in range(2)] + [_BIG_URIREF],
                                                          [URIRef('http://p%d' % i) for i in range(2)] + [_BIG_URIREF],
                                                          [URIRef('http://o')] 
-                                                         + [Literal(x) for x in [2, 3.14, 'ba#na.na']]
+                                                         #+ [Literal(x) for x in [2, 3.14, 'ba#na.na']]
                                                          + [_BIG_URIREF]
-                                                         + [_BIG_LITERAL],
+                                                         #+ [_BIG_LITERAL],
                                                          )]
 
 class TestCase(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestCase(unittest.TestCase):
     def testTriples(self):
         st = ndbstore.NDBStore(identifier = 'banana')
         st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
-        patterns = itertools.product(*zip(_TRIPLES[0], _TRIPLES[-1], [None, None, None]))
+        patterns = itertools.product(*zip(_TRIPLES[0], _TRIPLES[-1], [None, None, _TRIPLES[0][2]]))#None]))
         for pattern in patterns:
             self._assertSameMatches(st, pattern)
         
