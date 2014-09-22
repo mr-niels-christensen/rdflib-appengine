@@ -26,20 +26,26 @@ class TestCase(unittest.TestCase):
         ndbstore.NDBStore(identifier = 'banana')
         
     def testSingleAddAndRetrieve(self):
-        s = ndbstore.NDBStore(identifier = 'banana')
-        s.add(_TRIPLES[0], None)
-        self.assertEquals(1, len(s))
-        self.assertEquals(_TRIPLES[0:1], [t for (t, _) in s.triples((None, None, None), None)])
+        st = ndbstore.NDBStore(identifier = 'banana')
+        st.add(_TRIPLES[0], None)
+        self.assertEquals(1, len(st))
+        self.assertEquals(_TRIPLES[0:1], [t for (t, _) in st.triples((None, None, None), None)])
 
     def testSequenceAddAndRetrieve(self):
-        s = ndbstore.NDBStore(identifier = 'banana')
+        st = ndbstore.NDBStore(identifier = 'banana')
         for index in range(len(_TRIPLES)):
-            s.add(_TRIPLES[index], None)
-            self.assertEquals(1, len(s))
-            self.assertEquals(_TRIPLES[index:index+1], [t for (t, _) in s.triples((None, None, None), None)])
-            s.remove(_TRIPLES[index], None)
-            self.assertEquals(0, len(s))
-            self.assertEquals([], [t for (t, _) in s.triples((None, None, None), None)])
-            
+            st.add(_TRIPLES[index], None)
+            self.assertEquals(1, len(st))
+            self.assertEquals(_TRIPLES[index:index+1], [t for (t, _) in st.triples((None, None, None), None)])
+            st.remove(_TRIPLES[index], None)
+            self.assertEquals(0, len(st))
+            self.assertEquals([], [t for (t, _) in st.triples((None, None, None), None)])
+    
+    def testAddN(self):
+        st = ndbstore.NDBStore(identifier = 'banana')
+        st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
+        self.assertEquals(len(_TRIPLES), len(st))
+        self.assertEquals(set(_TRIPLES), set([t for (t, _) in st.triples((None, None, None), None)]))
+        
 if __name__ == '__main__':
     unittest.main()
