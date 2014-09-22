@@ -2,12 +2,19 @@
 all: runlocal
 
 .PHONY: runlocal
-runlocal: rdflib/__init__.py
+runlocal: rdflib/__init__.py .tests.made
 	dev_appserver.py --port=3030 .
 
 .PHONY: runclean
-runclean:
+runclean: .tests.made
 	dev_appserver.py . --port=3030 --clear_datastore true
+
+.PHONY: test
+test: .tests.made
+
+.tests.made: rdflib/__init__.py test/testrunner.py test/appengine/*.py
+	test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./test/ #TODO: This is not very portable
+	touch .tests.made
 
 rdflib/__init__.py:
 	pip install --ignore-installed -t libs rdflib
@@ -24,6 +31,7 @@ clean:
 	rm -f ./rdflib ./pkg_resources.py ./six.py ./pyparsing.py ./isodate ./html5lib ./SPARQLWrapper
 	rm -rf libs/
 	mkdir libs
+	rm .*.made
 
 .PHONY: deploy
 deploy:

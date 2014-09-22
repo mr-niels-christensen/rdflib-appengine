@@ -9,4 +9,4 @@ pkg_resources.py
 pyparsing.py
 rdflib
 six.py
-
+.*.made
