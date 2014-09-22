@@ -12,8 +12,8 @@ runclean: .tests.made
 .PHONY: test
 test: .tests.made
 
-.tests.made: rdflib/__init__.py test/testrunner.py test/appengine/*.py
-	test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./test/ #TODO: This is not very portable
+.tests.made: rdflib/__init__.py test/testrunner.py test/suite/*.py
+	test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./test/ . #TODO: This is not very portable
 	touch .tests.made
 
 rdflib/__init__.py:
