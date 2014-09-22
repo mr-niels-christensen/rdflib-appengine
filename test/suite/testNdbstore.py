@@ -2,6 +2,13 @@ import unittest
 from appengine import ndbstore
 from google.appengine.ext import testbed
 from rdflib.term import URIRef, Literal
+import itertools
+
+_TRIPLES = [(s, p, o) for [s, p, o] in itertools.product([URIRef('http://s%d' % i) for i in range(2)],
+                                                         [URIRef('http://p%d' % i) for i in range(2)],
+                                                         [URIRef('http://o')] 
+                                                         + [Literal(x) for x in [2, 3.14, 'ba#na.na']],
+                                                         )]
 
 class TestCase(unittest.TestCase):
     def setUp(self):
@@ -18,12 +25,11 @@ class TestCase(unittest.TestCase):
     def testConstructor(self):
         ndbstore.NDBStore(identifier = 'banana')
         
-    def testSimpleStoreAndRetrieve(self):
+    def testSingleStoreAndRetrieve(self):
         s = ndbstore.NDBStore(identifier = 'banana')
-        t = (URIRef('http://s'), URIRef('http://p'), Literal('o'))
-        s.add(t, None)
+        s.add(_TRIPLES[0], None)
         self.assertEquals(1, len(s))
-        self.assertEquals([t], [t for (t, _) in s.triples((None, None, None), None)])
+        self.assertEquals(_TRIPLES[0:1], [t for (t, _) in s.triples((None, None, None), None)])
 
 if __name__ == '__main__':
     unittest.main()
