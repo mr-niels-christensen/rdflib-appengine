@@ -31,7 +31,7 @@ class TestCase(unittest.TestCase):
         self.assertEquals(1, len(st))
         self.assertEquals(_TRIPLES[0:1], [t for (t, _) in st.triples((None, None, None), None)])
 
-    def testSequenceAddAndRetrieve(self):
+    def testSequenceAddAndRetrieveAndRemove(self):
         st = ndbstore.NDBStore(identifier = 'banana')
         for index in range(len(_TRIPLES)):
             st.add(_TRIPLES[index], None)
