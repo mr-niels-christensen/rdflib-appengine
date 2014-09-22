@@ -5,6 +5,10 @@ all: runlocal
 runlocal: rdflib/__init__.py
 	dev_appserver.py --port=3030 .
 
+.PHONY: runclean
+runclean:
+	dev_appserver.py . --port=3030 --clear_datastore true
+
 rdflib/__init__.py:
 	pip install --ignore-installed -t libs rdflib
 	ln -s ./libs/rdflib ./rdflib
@@ -20,6 +24,7 @@ clean:
 	rm -f ./rdflib ./pkg_resources.py ./six.py ./pyparsing.py ./isodate ./html5lib ./SPARQLWrapper
 	rm -rf libs/
 	mkdir libs
+
 .PHONY: deploy
 deploy:
 	appcfg.py update .
