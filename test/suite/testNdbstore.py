@@ -25,11 +25,21 @@ class TestCase(unittest.TestCase):
     def testConstructor(self):
         ndbstore.NDBStore(identifier = 'banana')
         
-    def testSingleStoreAndRetrieve(self):
+    def testSingleAddAndRetrieve(self):
         s = ndbstore.NDBStore(identifier = 'banana')
         s.add(_TRIPLES[0], None)
         self.assertEquals(1, len(s))
         self.assertEquals(_TRIPLES[0:1], [t for (t, _) in s.triples((None, None, None), None)])
 
+    def testSequenceAddAndRetrieve(self):
+        s = ndbstore.NDBStore(identifier = 'banana')
+        for index in range(len(_TRIPLES)):
+            s.add(_TRIPLES[index], None)
+            self.assertEquals(1, len(s))
+            self.assertEquals(_TRIPLES[index:index+1], [t for (t, _) in s.triples((None, None, None), None)])
+            s.remove(_TRIPLES[index], None)
+            self.assertEquals(0, len(s))
+            self.assertEquals([], [t for (t, _) in s.triples((None, None, None), None)])
+            
 if __name__ == '__main__':
     unittest.main()
