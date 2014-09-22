@@ -10,7 +10,7 @@ from rdflib.store import Store
 from rdflib import term
 from google.appengine.ext import ndb
 
-ANY = Any = None
+ANY = None
 
 def _blank_or_uri(value, is_blank):
     return term.BNode(value = value) if is_blank else term.URIRef(value = value)
@@ -61,7 +61,7 @@ class NonLiteralTriple(ndb.Model):
                                  NonLiteralTriple.rdf_property, 
                                  NonLiteralTriple.rdf_object], 
                                 [s, p, o])
-        filters = [(field == value) for field, value in candidate_filters if value is not None]
+        filters = [(field == value) for field, value in candidate_filters if value is not ANY]
         return NonLiteralTriple.query(ancestor = graph_key).filter(*filters)
     
 class LiteralTriple(ndb.Model):
@@ -104,8 +104,8 @@ class LiteralTriple(ndb.Model):
         candidate_filters = zip([NonLiteralTriple.rdf_subject,  #We are assuming that BNode names and URIRef names cannot be the same
                                  NonLiteralTriple.rdf_property], 
                                 [s, p])
-        filters = [(field == value) for field, value in candidate_filters if value is not None]
-        if o is not None:
+        filters = [(field == value) for field, value in candidate_filters if value is not ANY]
+        if o is not ANY:
             filters += [LiteralTriple.rdf_object_lexical == unicode(o),
                         LiteralTriple.rdf_object_datatype == o.datatype,
                         LiteralTriple.rdf_object_language == o.language]
