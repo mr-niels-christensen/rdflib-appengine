@@ -47,6 +47,23 @@ class TestCase(unittest.TestCase):
         self.assertEquals(len(_TRIPLES), len(st))
         self._assertSameSet(_TRIPLES, st.triples((None, None, None), None))
     
+    def testTriples(self):
+        st = ndbstore.NDBStore(identifier = 'banana')
+        st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
+        patterns = itertools.product(*zip(_TRIPLES[0], _TRIPLES[-1], [None, None, None]))
+        for pattern in patterns:
+            self._assertSameMatches(st, pattern)
+        
+    def _assertSameMatches(self, st, (s, p, o)):
+        mine = _TRIPLES
+        if s is not None:
+            mine = [t for t in mine if t[0] == s]
+        if p is not None:
+            mine = [t for t in mine if t[1] == p]
+        if o is not None:
+            mine = [t for t in mine if t[2] == o]
+        self._assertSameSet(mine, st.triples((s, p, o), None))
+        
     def _assertSameSet(self, triple_list, quad_generator):
         self.assertEquals(set(triple_list), set([t for (t, _) in quad_generator]))
         
