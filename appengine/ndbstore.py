@@ -77,10 +77,13 @@ class NonLiteralTriple(ndb.Model):
         return NonLiteralTriple.query(ancestor = graph_key).filter(*filters)
     
 class LiteralTriple(ndb.Model):
-    rdf_subject = ndb.StringProperty()
+    rdf_subject_sha1 = ndb.StringProperty()
+    rdf_subject_text = ndb.TextProperty()
     rdf_subject_is_blank = ndb.BooleanProperty()
-    rdf_property = ndb.StringProperty()
-    rdf_object_lexical = ndb.StringProperty()
+    rdf_property_sha1 = ndb.StringProperty()
+    rdf_property_text = ndb.TextProperty()
+    rdf_object_lexical_sha1 = ndb.StringProperty()
+    rdf_object_lexical_text = ndb.TextProperty()
     rdf_object_datatype = ndb.StringProperty()
     rdf_object_language = ndb.StringProperty()
     
@@ -88,18 +91,21 @@ class LiteralTriple(ndb.Model):
     def create(graph_key, s, p, o):
         assert isinstance(o, term.Literal), "Trying to store a Literal in a NonLiteralTriple: %s %s %s %s" % (graph_key, s, p, o)
         return LiteralTriple(parent = graph_key, 
-                             rdf_subject = unicode(s),
+                             rdf_subject_sha1 = sha1(s),
+                             rdf_subject_text = unicode(s),
                              rdf_subject_is_blank = isinstance(s, term.BNode),
-                             rdf_property = unicode(p),
-                             rdf_object_lexical = unicode(o)[0:400],#TODO Store data
+                             rdf_property_sha1 = sha1(p),
+                             rdf_property_text = unicode(p),
+                             rdf_object_lexical_sha1 = sha1(o),
+                             rdf_object_lexical_text = unicode(o),
                              rdf_object_datatype = o.datatype,
                              rdf_object_language = o.language
                              )
         
     def toRdflib(self):
-        return (_blank_or_uri(self.rdf_subject, self.rdf_subject_is_blank),
-                term.URIRef(value = self.rdf_property),
-                term.Literal(self.rdf_object_lexical, 
+        return (_blank_or_uri(self.rdf_subject_text, self.rdf_subject_is_blank),
+                term.URIRef(value = self.rdf_property_text),
+                term.Literal(self.rdf_object_lexical_text, 
                              lang = self.rdf_object_language, 
                              datatype = self.rdf_object_datatype)
                 )    
@@ -113,12 +119,12 @@ class LiteralTriple(ndb.Model):
            @param o Literal RDF object or None (for wildcard)
            @return An NDB query that will find the matching triples when executed.
         '''
-        candidate_filters = zip([LiteralTriple.rdf_subject,  #We are assuming that BNode names and URIRef names cannot be the same
-                                 LiteralTriple.rdf_property], 
+        candidate_filters = zip([LiteralTriple.rdf_subject_sha1,  #We are assuming that BNode names and URIRef names cannot be the same
+                                 LiteralTriple.rdf_property_sha1], 
                                 [s, p])
-        filters = [(field == value) for field, value in candidate_filters if value is not ANY]
+        filters = [(field == sha1(value)) for field, value in candidate_filters if value is not ANY]
         if o is not ANY:
-            filters += [LiteralTriple.rdf_object_lexical == unicode(o),
+            filters += [LiteralTriple.rdf_object_lexical_sha1 == sha1(o),
                         LiteralTriple.rdf_object_datatype == o.datatype,
                         LiteralTriple.rdf_object_language == o.language]
         return LiteralTriple.query(ancestor = graph_key).filter(*filters)
