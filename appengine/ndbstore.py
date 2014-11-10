@@ -10,6 +10,8 @@ from rdflib.store import Store
 from rdflib import term
 from google.appengine.ext import ndb
 import hashlib
+import logging
+from time import time
 
 ANY = None
 
@@ -169,12 +171,14 @@ class NDBStore(Store):
     def triples(self, (s, p, o), context=None):
         """A generator over all the triples matching """
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
+        begin = time()
         if o is None or isinstance(o, term.Literal):
             for item in LiteralTriple.matching_query(self._graph_key, s, p, o):
                 yield item.toRdflib(), self.__contexts()
         if o is None or not isinstance(o, term.Literal):
             for item in NonLiteralTriple.matching_query(self._graph_key, s, p, o):
                 yield item.toRdflib(), self.__contexts()
+        logging.debug('{t} seconds used in triples({s},{p},{o})'.format(t = time() - begin, s = s, p = p, o = o))
         
     def __len__(self, context=None): #TODO: Optimize
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
