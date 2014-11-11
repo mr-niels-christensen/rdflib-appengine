@@ -1,5 +1,6 @@
 *.pyc
 .project
+.settings
 .pydevproject
 SPARQLWrapper
 html5lib
