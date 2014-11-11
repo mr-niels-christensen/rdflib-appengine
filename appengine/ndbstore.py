@@ -186,27 +186,6 @@ class NDBStore(Store):
                  + LiteralTriple.matching_query(self._graph_key, None, None, None).count()
                  )
 
-    def bind(self, prefix, namespace): #TODO is namespace allowed to be None?
-        self._graph.prefixes = [prefix] + self._graph.prefixes
-        self._graph.namespaces = [prefix] + self._graph.namespaces
-        self._graph.put()
-
-    def namespace(self, prefix):
-        try: 
-            return self._graph.namespaces[self._graph.prefixes.index(prefix)]
-        except ValueError:
-            return None
-
-    def prefix(self, namespace):
-        try: 
-            return self._graph.prefixes[self._graph.namespaces.index(namespace)]
-        except ValueError:
-            return None
-
-    def namespaces(self):
-        for prefix, namespace in zip(self._graph.prefixes, self._graph.namespaces):
-            yield prefix, namespace
-
     def __contexts(self):
         '''Empty generator
         '''
