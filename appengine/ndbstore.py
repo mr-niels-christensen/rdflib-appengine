@@ -20,7 +20,7 @@ def _blank_or_uri(value, is_blank):
 
 def sha1(node):
     m = hashlib.sha1()
-    m.update(unicode(node))
+    m.update(node.encode('utf-8'))
     return m.hexdigest()
 
 class RdfGraph(ndb.Model):
