@@ -12,10 +12,6 @@ class MainPage(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/sparql-results+json; charset=utf-8'
         self.response.write(query(self.request.get('query')))
 
-    def post(self):
-        update(self.request.body)
-        self.response.set_status(201)
-
 class FourOhFour(webapp2.RequestHandler):
     def get(self):
         #Access-Control-Allow-Origin: *
