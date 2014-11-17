@@ -53,6 +53,7 @@ class CoarseNDBStore(Store):
     """
     A triple store using NDB on GAE (Google App Engine)
     """
+    
     def __init__(self, configuration=None, identifier=None):
         super(CoarseNDBStore, self).__init__(configuration)
         assert identifier is not None, "CoarseNDBStore requires a basestring identifier"
@@ -106,15 +107,21 @@ class CoarseNDBStore(Store):
     def triples(self, (s, p, o), context=None):
         """A generator over all the triples matching """
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
+        from time import time
+        begin = time()
+        logging.debug('{}: triples({}, {}, {})'.format(begin, s, p, o))
         if p == ANY:
             logging.warn('Inefficient usage: p is None in {}'.format((s, p, o)))
             models = GraphShard.query().filter(GraphShard.graph_ID == self._ID).iter()
         else:
             models = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1)) 
+        logging.debug('{}: RPC done'.format(begin))
         for m in models:
             if m is not None:
                 for t in m.rdflib_graph().triples((s, p, o)):
                     yield t, self.__contexts()
+        logging.debug('{}: done'.format(begin))
+
         
     def __len__(self, context=None): #TODO: Optimize
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
