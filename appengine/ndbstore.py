@@ -208,7 +208,7 @@ class GraphShard(ndb.Model):
             return g
         g = Graph(store = IOMemory())
         g.parse(data = self.graph_n3, format='n3')
-        memcache.add(self._parsed_memcache_key(), g, 600)
+        memcache.add(self._parsed_memcache_key(), g, 86400)
         return g
     
     def _parsed_memcache_key(self):
