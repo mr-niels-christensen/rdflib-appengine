@@ -30,15 +30,21 @@ class GraphShard(ndb.Model):
     graph_ID = ndb.StringProperty()
 
     def rdflib_graph(self):
-        key = 'IOMemory({})'.format(self.key.id())
-        g = memcache.get(key)
+        g = memcache.get(self._parsed_memcache_key())
         if g is not None:
             return g
         g = Graph(store = IOMemory())
         g.parse(data = self.graph_n3, format='n3')
-        memcache.add(key, g, 600)
+        memcache.add(self._parsed_memcache_key(), g, 600)
         return g
     
+    def _parsed_memcache_key(self):
+        return 'IOMemory({})'.format(self.key.id())
+    
+    @staticmethod
+    def invalidate(instances):
+        memcache.delete_multi([instance._parsed_memcache_key() for instance in instances])
+        
     @staticmethod
     def key_for(graph_ID, uri_ref, index):
         #TODO: Maybe only SHA1 if uri_ref is long
@@ -86,6 +92,7 @@ class CoarseNDBStore(Store):
                 model.graph_n3 = new_shard_dict[key].serialize(format='n3')
             updated.append(model)
         if len(updated) > 0:
+            GraphShard.invalidate(updated)
             ndb.put_multi(updated)
 
     def add(self, (subject, predicate, o), context, quoted=False):
@@ -106,6 +113,7 @@ class CoarseNDBStore(Store):
                 m.graph_n3 = g.serialize(format='n3')
                 updated.append(m)
         if len(updated) > 0:
+            GraphShard.invalidate(updated)
             ndb.put_multi(updated)
 
     def triples(self, (s, p, o), context=None):
