@@ -1,5 +1,5 @@
 import unittest
-from appengine import coarsestore
+from appengine.ndbstore import CoarseNDBStore
 from google.appengine.ext import testbed
 from rdflib.term import URIRef, Literal
 import itertools
@@ -28,16 +28,16 @@ class TestCase(unittest.TestCase):
         self.testbed.deactivate()
 
     def testConstructor(self):
-        coarsestore.CoarseNDBStore(identifier = 'banana')
+        CoarseNDBStore(identifier = 'banana')
         
     def testSingleAddAndRetrieve(self):
-        st = coarsestore.CoarseNDBStore(identifier = 'banana')
+        st = CoarseNDBStore(identifier = 'banana')
         st.add(_TRIPLES[0], None)
         self.assertEquals(1, len(st))
         self._assertSameSet(_TRIPLES[0:1], st.triples((None, None, None), None))
 
     def testSequenceAddAndRetrieveAndRemove(self):
-        st = coarsestore.CoarseNDBStore(identifier = 'banana')
+        st = CoarseNDBStore(identifier = 'banana')
         for index in range(len(_TRIPLES)):
             st.add(_TRIPLES[index], None)
             self.assertEquals(1, len(st))
@@ -47,13 +47,13 @@ class TestCase(unittest.TestCase):
             self._assertSameSet([], st.triples((None, None, None), None))
     
     def testAddN(self):
-        st = coarsestore.CoarseNDBStore(identifier = 'banana')
+        st = CoarseNDBStore(identifier = 'banana')
         st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
         self.assertEquals(len(_TRIPLES), len(st))
         self._assertSameSet(_TRIPLES, st.triples((None, None, None), None))
     
     def testTriples(self):
-        st = coarsestore.CoarseNDBStore(identifier = 'banana')
+        st = CoarseNDBStore(identifier = 'banana')
         st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
         patterns = itertools.product(*zip(_TRIPLES[0], _TRIPLES[-1], [None, None, None]))
         for pattern in patterns:
