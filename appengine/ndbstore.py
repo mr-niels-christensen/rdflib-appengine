@@ -296,10 +296,9 @@ class CoarseNDBStore(Store):
             models = GraphShard.query().filter(GraphShard.graph_ID == self._ID).iter()
         else:
             models = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1)) 
-        logging.debug('{}: RPC done'.format(begin))
         for m in models:
             if m is not None:
-                for t in m.rdflib_graph().triples((s, ANY, o)):
+                for t in m.rdflib_graph().triples((s, ANY, o)): #IOMemory is slower if you provide a redundant binding
                     yield t, self.__contexts()
         logging.debug('{}: done'.format(begin))
 
