@@ -13,6 +13,8 @@ import hashlib
 import logging
 from datetime import datetime, timedelta
 from collections import defaultdict
+from google.appengine.api import memcache
+from rdflib.plugins.memory import IOMemory
 
 ANY = None
 
@@ -28,23 +30,26 @@ class GraphShard(ndb.Model):
     graph_ID = ndb.StringProperty()
 
     def rdflib_graph(self):
-        g = Graph()
+        key = 'IOMemory({})'.format(self.key.id())
+        g = memcache.get(key)
+        if g is not None:
+            return g
+        g = Graph(store = IOMemory())
         g.parse(data = self.graph_n3, format='n3')
+        memcache.add(key, g, 600)
         return g
     
     @staticmethod
-    def key_for(graph_ID, uri_ref, index, date_as_iso_string):
+    def key_for(graph_ID, uri_ref, index):
         #TODO: Maybe only SHA1 if uri_ref is long
         assert index in range(3), 'index was {}, must be one of 0 for subject, 1 for predicate, 2 for object'.format(index)
-        return ndb.Key(GraphShard, '{}-{}-{}-{}'.format(sha1(uri_ref), date_as_iso_string, 'spo'[index], graph_ID))
+        return ndb.Key(GraphShard, '{}-{}-{}'.format(sha1(uri_ref), 'spo'[index], graph_ID))
 
     @staticmethod
-    def keys_for(graph_ID, uri_ref, index, no_of_days = 3):
+    def keys_for(graph_ID, uri_ref, index):
         return [GraphShard.key_for(graph_ID, 
                                    uri_ref,
-                                   index,
-                                   _today_as_isostring(timedelta(-days_back))) 
-                for days_back in range(no_of_days)]
+                                   index)]
 
 def _today_as_isostring(delta = timedelta(0)):
     return (datetime.utcnow().date() - delta).strftime('%Y-%m-%d')
@@ -65,11 +70,10 @@ class CoarseNDBStore(Store):
     def addN(self, quads):
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         #Note: quads is a generator, not a list. It cannot be traversed twice.
-        datestring = _today_as_isostring() #Avoid date wrapping issues during processing
         new_shard_dict = defaultdict(Graph)
         #TODO: Handle splitting large graphs into two entities
         for (s, p, o, _) in quads:
-            new_shard_dict[GraphShard.key_for(self._ID, p, 1, datestring)].add((s, p, o))
+            new_shard_dict[GraphShard.key_for(self._ID, p, 1)].add((s, p, o))
         keys = list(new_shard_dict.keys())
         keys_models = zip(keys, ndb.get_multi(keys)) #TODO: Use async get
         updated = list()
@@ -118,7 +122,7 @@ class CoarseNDBStore(Store):
         logging.debug('{}: RPC done'.format(begin))
         for m in models:
             if m is not None:
-                for t in m.rdflib_graph().triples((s, p, o)):
+                for t in m.rdflib_graph().triples((s, ANY, o)):
                     yield t, self.__contexts()
         logging.debug('{}: done'.format(begin))
 
