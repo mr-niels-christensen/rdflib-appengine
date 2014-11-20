@@ -313,16 +313,16 @@ class CoarseNDBStore(Store):
             pattern = (s, ANY, o) #IOMemory is slower if you provide a redundant binding
         for m in models:
             if m is not None:
-                logging.debug('BEGIN traversing {}'.format(m.key))
-                hits = 0
-                pred = None
+                #logging.debug('BEGIN traversing {}'.format(m.key))
+                #hits = 0
+                #pred = None
                 g = m.rdflib_graph()
-                logging.debug('PARSED {}'.format(m.key))
+                #logging.debug('PARSED {}'.format(m.key))
                 for t in g.triples(pattern): #IOMemory is slower if you provide a redundant binding
-                    hits += 1
-                    pred = t[1]
+                    #hits += 1
+                    #pred = t[1]
                     yield t, self.__contexts()
-                logging.debug('END traversing {}, found {} hits, pred={}'.format(m.key, hits, pred))
+                #logging.debug('END traversing {}, found {} hits, pred={}'.format(m.key, hits, pred))
         logging.debug('{}: done'.format(begin))
 
     def _all_predicate_shard_models(self):
