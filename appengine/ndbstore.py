@@ -224,6 +224,9 @@ class GraphShard(ndb.Model):
         assert index in range(3), 'index was {}, must be one of 0 for subject, 1 for predicate, 2 for object'.format(index)
         return ndb.Key(GraphShard, '{}-{}-{}'.format(sha1(uri_ref), 'spo'[index], graph_ID))
 
+    def spo(self):
+        return self.key.id().split('-')[1]
+    
     @staticmethod
     def keys_for(graph_ID, uri_ref, index):
         return [GraphShard.key_for(graph_ID, 
@@ -249,6 +252,7 @@ class CoarseNDBStore(Store):
         new_shard_dict = defaultdict(Graph)
         #TODO: Handle splitting large graphs into two entities
         for (s, p, o, _) in quads:
+            new_shard_dict[GraphShard.key_for(self._ID, s, 0)].add((s, p, o))
             new_shard_dict[GraphShard.key_for(self._ID, p, 1)].add((s, p, o))
         keys = list(new_shard_dict.keys())
         keys_models = zip(keys, ndb.get_multi(keys)) #TODO: Use async get
@@ -274,7 +278,7 @@ class CoarseNDBStore(Store):
 
     def remove(self, (s, p, o), context=None):
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
-        graph_shards = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1))
+        graph_shards = ndb.get_multi(GraphShard.keys_for(self._ID, s, 0)) + ndb.get_multi(GraphShard.keys_for(self._ID, p, 1))
         updated = []
         for m in graph_shards:
             if m is not None:
@@ -292,21 +296,39 @@ class CoarseNDBStore(Store):
         begin = time()
         logging.debug('{}: triples({}, {}, {})'.format(begin, s, p, o))
         if p == ANY:
-            logging.warn('Inefficient usage: p is None in {}'.format((s, p, o)))
-            models = GraphShard.query().filter(GraphShard.graph_ID == self._ID).iter()
+            if s == ANY:
+                models = self._all_predicate_shard_models()
+                pattern = (s, p, o)
+            else:
+                models = ndb.get_multi(GraphShard.keys_for(self._ID, s, 0))
+                pattern = (ANY, p, o) #IOMemory is slower if you provide a redundant binding
         else:
-            models = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1)) 
+            models = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1))
+            pattern = (s, ANY, o) #IOMemory is slower if you provide a redundant binding
         for m in models:
             if m is not None:
-                for t in m.rdflib_graph().triples((s, ANY, o)): #IOMemory is slower if you provide a redundant binding
+                logging.debug('BEGIN traversing {}'.format(m.key))
+                hits = 0
+                pred = None
+                g = m.rdflib_graph()
+                logging.debug('PARSED {}'.format(m.key))
+                for t in g.triples(pattern): #IOMemory is slower if you provide a redundant binding
+                    hits += 1
+                    pred = t[1]
                     yield t, self.__contexts()
+                logging.debug('END traversing {}, found {} hits, pred={}'.format(m.key, hits, pred))
         logging.debug('{}: done'.format(begin))
 
-        
+    def _all_predicate_shard_models(self):
+        logging.warn('Inefficient usage: Traversing all triples')
+        for m in GraphShard.query().filter(GraphShard.graph_ID == self._ID).iter():
+            if m is not None and m.spo() == 'p':
+                yield m
+                
     def __len__(self, context=None): #TODO: Optimize
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         logging.warn('Inefficient usage: __len__'.format())
-        return sum([len(m.rdflib_graph()) for m in GraphShard.query().filter(GraphShard.graph_ID == self._ID).fetch()])
+        return sum([len(m.rdflib_graph()) for m in self._all_predicate_shard_models()])
 
     def __contexts(self):
         '''Empty generator
