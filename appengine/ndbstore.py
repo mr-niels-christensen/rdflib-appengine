@@ -220,12 +220,18 @@ class GraphShard(ndb.Model):
         
     @staticmethod
     def key_for(graph_ID, uri_ref, index):
-        #TODO: Maybe only SHA1 if uri_ref is long
         assert index in range(3), 'index was {}, must be one of 0 for subject, 1 for predicate, 2 for object'.format(index)
-        return ndb.Key(GraphShard, '{}-{}-{}'.format(sha1(uri_ref), 'spo'[index], graph_ID))
+        if index == 1: #Keep predicates completely separate
+            wiff = uri_ref.split('/')[-1].replace('-','')
+            if len(wiff) > 20:
+                wiff = wiff[-20:]
+            uri_ref_digest = '{}_{}'.format(wiff, sha1(uri_ref))
+        else: #Split into 16
+            uri_ref_digest = sha1(uri_ref)[-1]
+        return ndb.Key(GraphShard, '{}-{}-{}-{}'.format('spo'[index], uri_ref_digest, '', graph_ID))
 
     def spo(self):
-        return self.key.id().split('-')[1]
+        return self.key.id().split('-')[0]
     
     @staticmethod
     def keys_for(graph_ID, uri_ref, index):
@@ -301,7 +307,7 @@ class CoarseNDBStore(Store):
                 pattern = (s, p, o)
             else:
                 models = ndb.get_multi(GraphShard.keys_for(self._ID, s, 0))
-                pattern = (ANY, p, o) #IOMemory is slower if you provide a redundant binding
+                pattern = (s, p, o) #IOMemory is slower if you provide a redundant binding
         else:
             models = ndb.get_multi(GraphShard.keys_for(self._ID, p, 1))
             pattern = (s, ANY, o) #IOMemory is slower if you provide a redundant binding
