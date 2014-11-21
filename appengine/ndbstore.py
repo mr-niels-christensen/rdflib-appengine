@@ -16,6 +16,7 @@ from rdflib import Graph
 from collections import defaultdict
 from google.appengine.api import memcache
 from rdflib.plugins.memory import IOMemory
+from weakref import WeakValueDictionary
 
 ANY = None
 
@@ -202,12 +203,20 @@ class GraphShard(ndb.Model):
     #TODO add date for cleaning up
     graph_ID = ndb.StringProperty()
 
+    _graph_cache = WeakValueDictionary()
+    _not_found = set() #Because None or object() cannot be weakref'ed
+    
     def rdflib_graph(self):
+        g = GraphShard._graph_cache.get(self._parsed_memcache_key(), GraphShard._not_found)
+        if g is not GraphShard._not_found:
+            return g
         g = memcache.get(self._parsed_memcache_key())
         if g is not None:
+            GraphShard._graph_cache[self._parsed_memcache_key()] = g
             return g
         g = Graph(store = IOMemory())
         g.parse(data = self.graph_n3, format='n3')
+        GraphShard._graph_cache[self._parsed_memcache_key()] = g
         memcache.add(self._parsed_memcache_key(), g, 86400)
         return g
     
@@ -216,6 +225,8 @@ class GraphShard(ndb.Model):
     
     @staticmethod
     def invalidate(instances):
+        for instance in instances:
+            GraphShard._graph_cache[instance._parsed_memcache_key()] = GraphShard._not_found
         memcache.delete_multi([instance._parsed_memcache_key() for instance in instances])
         
     @staticmethod
