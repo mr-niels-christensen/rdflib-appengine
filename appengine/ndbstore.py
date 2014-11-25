@@ -18,6 +18,7 @@ from google.appengine.api import memcache
 from rdflib.plugins.memory import IOMemory
 from weakref import WeakValueDictionary
 from StringIO import StringIO
+from random import randrange
 
 ANY = None
 
@@ -327,7 +328,8 @@ class CoarseNDBStore(Store):
     def triples(self, (s, p, o), context=None):
         """A generator over all the triples matching """
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
-        self.log('triples({}, {}, {})'.format(s, p, o))
+        log_id = '{:04d}'.format(randrange(1000))
+        self.log('{} triples({}, {}, {})'.format(log_id, s, p, o))
         if p == ANY:
             if s == ANY:
                 models = self._all_predicate_shard_models()
@@ -343,7 +345,7 @@ class CoarseNDBStore(Store):
                 g = m.rdflib_graph()
                 for t in g.triples(pattern): #IOMemory is slower if you provide a redundant binding
                     yield t, self.__contexts()
-        self.log('done')
+        self.log('{} done'.format(log_id))
 
     def _all_predicate_shard_models(self):
         logging.warn('Inefficient usage: Traversing all triples')
