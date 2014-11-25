@@ -266,12 +266,13 @@ class CoarseNDBStore(Store):
         assert len(identifier) < 64, "CoarseNDBStore requires a brief identifier"
         self._ID = identifier
         self._log = StringIO()
+        self._log_begin = time()
         assert isinstance(configuration['log'], bool), "Configuration must set 'log' to True or False"
         self._is_logging = configuration['log']
 
     def log(self, msg):
         if self._is_logging:
-            self._log.write('\n')
+            self._log.write('\n{:.3f}s: '.format(time() - self._log_begin))
             self._log.write(msg)
 
     def flush_log(self, level):
@@ -326,8 +327,7 @@ class CoarseNDBStore(Store):
     def triples(self, (s, p, o), context=None):
         """A generator over all the triples matching """
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
-        begin = time()
-        self.log('{}: triples({}, {}, {})'.format(begin, s, p, o))
+        self.log('triples({}, {}, {})'.format(s, p, o))
         if p == ANY:
             if s == ANY:
                 models = self._all_predicate_shard_models()
@@ -343,7 +343,7 @@ class CoarseNDBStore(Store):
                 g = m.rdflib_graph()
                 for t in g.triples(pattern): #IOMemory is slower if you provide a redundant binding
                     yield t, self.__contexts()
-        self.log('{}: done'.format(begin))
+        self.log('done')
 
     def _all_predicate_shard_models(self):
         logging.warn('Inefficient usage: Traversing all triples')
