@@ -17,6 +17,7 @@ from collections import defaultdict
 from google.appengine.api import memcache
 from rdflib.plugins.memory import IOMemory
 from weakref import WeakValueDictionary
+from StringIO import StringIO
 
 ANY = None
 
@@ -250,19 +251,34 @@ class GraphShard(ndb.Model):
                                    uri_ref,
                                    index)]
 
+_STD_CONFIG = {'log' : False}
+
 class CoarseNDBStore(Store):
     """
     A triple store using NDB on GAE (Google App Engine)
     """
     
-    def __init__(self, configuration=None, identifier=None):
+    def __init__(self, configuration=_STD_CONFIG, identifier=None):
         super(CoarseNDBStore, self).__init__(configuration)
         assert identifier is not None, "CoarseNDBStore requires a basestring identifier"
         assert isinstance(identifier, basestring), "CoarseNDBStore requires a basestring identifier"
         assert len(identifier) > 0, "CoarseNDBStore requires a non-empty identifier"
         assert len(identifier) < 64, "CoarseNDBStore requires a brief identifier"
         self._ID = identifier
+        self._log = StringIO()
+        assert isinstance(configuration['log'], bool), "Configuration must set 'log' to True or False"
+        self._is_logging = configuration['log']
 
+    def log(self, msg):
+        if self._is_logging:
+            self._log.write('\n')
+            self._log.write(msg)
+
+    def flush_log(self, level):
+        if self._is_logging:
+            logging.log(level, self._log.getvalue())
+            self._log = StringIO()
+        
     def addN(self, quads):
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         #Note: quads is a generator, not a list. It cannot be traversed twice.
@@ -311,7 +327,7 @@ class CoarseNDBStore(Store):
         """A generator over all the triples matching """
         #TODO: What is the meaning of the supplied context? I got [a rdfg:Graph;rdflib:storage [a rdflib:Store;rdfs:label 'NDBStore']]
         begin = time()
-        logging.debug('{}: triples({}, {}, {})'.format(begin, s, p, o))
+        self.log('{}: triples({}, {}, {})'.format(begin, s, p, o))
         if p == ANY:
             if s == ANY:
                 models = self._all_predicate_shard_models()
@@ -324,17 +340,10 @@ class CoarseNDBStore(Store):
             pattern = (s, ANY, o) #IOMemory is slower if you provide a redundant binding
         for m in models:
             if m is not None:
-                #logging.debug('BEGIN traversing {}'.format(m.key))
-                #hits = 0
-                #pred = None
                 g = m.rdflib_graph()
-                #logging.debug('PARSED {}'.format(m.key))
                 for t in g.triples(pattern): #IOMemory is slower if you provide a redundant binding
-                    #hits += 1
-                    #pred = t[1]
                     yield t, self.__contexts()
-                #logging.debug('END traversing {}, found {} hits, pred={}'.format(m.key, hits, pred))
-        logging.debug('{}: done'.format(begin))
+        self.log('{}: done'.format(begin))
 
     def _all_predicate_shard_models(self):
         logging.warn('Inefficient usage: Traversing all triples')
