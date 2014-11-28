@@ -9,6 +9,6 @@ setup(name='rdflib-appengine',
       packages=['rdflib_appengine',
                 ],
       install_requires=[
-          'rdflib',
+          'rdflib==4.1.2',
       ],
      )
