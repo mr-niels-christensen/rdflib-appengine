@@ -48,7 +48,7 @@ dist: $(DISTFILE)
 
 $(DISTFILE): $(SRCMAIN_FILES)
 	mkdir -p dist
-	(cd src/main/ && ./setup.py sdist --dist-dir ../../../dist/)
+	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/)
 
 .venv.for.use/bin/activate:
 	virtualenv .venv.for.use
