@@ -1,5 +1,5 @@
 import unittest
-from appengine.ndbstore import CoarseNDBStore
+from rdflib_appengine.ndbstore import CoarseNDBStore
 from google.appengine.ext import testbed
 from rdflib.term import URIRef, Literal
 import itertools

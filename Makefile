@@ -1,7 +1,7 @@
 MAJORMINOR := 0.6
 
 SRCMAIN_FILES := $(shell find src/main -name "*.py")
-NAME := $(shell grep name src/main/python/setup.py | cut -d "'" -f 2)
+NAME := $(shell grep name src/main/setup.py | cut -d "'" -f 2)
 DISTFILE := dist/$(NAME)-$(MAJORMINOR).tar.gz
 GAEDIR := build/rdflib-appengine-$(MAJORMINOR)
 
@@ -18,8 +18,8 @@ all: ide runlocal
 .PHONY: test
 test: .tests.made
 
-.tests.made: rdflib/__init__.py test/testrunner.py src/test/suite/*.py .pip.for.use.made
-	source .venv.for.use/bin/activate && src/test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) .src/test/ #TODO: This is not very portable
+.tests.made: src/test/testrunner.py src/test/suite/*.py .pip.for.use.made
+	source .venv.for.use/bin/activate && src/test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./src/test/ #TODO: This is not very portable
 	touch .tests.made
 
 .gaebuild.made: .gaebuild.example.made .gaebuild.srcmain.made

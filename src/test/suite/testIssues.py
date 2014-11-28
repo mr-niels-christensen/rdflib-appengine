@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
-from appengine import ndbstore
+from rdflib_appengine import ndbstore
 from google.appengine.ext import testbed
 from rdflib.term import URIRef, Literal
 
