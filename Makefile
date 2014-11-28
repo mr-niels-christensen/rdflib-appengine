@@ -7,7 +7,7 @@ GAEDIR := build/rdflib-appengine-$(MAJORMINOR)
 
 .PHONY: runlocal
 runlocal: .gaebuild.made .tests.made
-	dev_appserver.py $(GAEDIR) --log_level debug
+	dev_appserver.py $(GAEDIR) --port=3030 --log_level debug
 
 .PHONY: gaebuild
 gaebuild: .gaebuild.made

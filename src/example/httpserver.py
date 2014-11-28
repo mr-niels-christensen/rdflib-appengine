@@ -1,6 +1,6 @@
 import webapp2
 from rdflib import Graph
-from appengine.ndbstore import NDBStore
+from rdflib_appengine.ndbstore import NDBStore
 
 _GRAPH_ID = 'default-graph'
 _GRAPH_INSTANCE_ID = 'Graph-instance'
