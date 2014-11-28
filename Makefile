@@ -25,12 +25,13 @@ test: .tests.made
 .gaebuild.made: .gaebuild.example.made .gaebuild.srcmain.made
 	touch .gaebuild.made
 
-.gaebuild.srcmain.made: .gaedir.made
+.gaebuild.srcmain.made: .gaedir.made $(DISTFILE)
 	pip install -t $(GAEDIR) $(DISTFILE)
+	touch .gaebuild.srcmain.made
 
 .gaebuild.example.made: src/example/* .gaedir.made
 	cp -r src/example/* $(GAEDIR)/
-	touch .gaebuild.python.made
+	touch .gaebuild.example.made
 
 .gaedir.made:
 	mkdir -p $(GAEDIR)
