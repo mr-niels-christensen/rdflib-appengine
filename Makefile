@@ -1,4 +1,4 @@
-MAJORMINOR := 0.6
+MAJORMINOR := 1.0
 
 SRCMAIN_FILES := $(shell find src/main -name "*.py")
 NAME := $(shell grep name src/main/setup.py | cut -d "'" -f 2)
@@ -30,7 +30,7 @@ test: .tests.made
 	touch .gaebuild.srcmain.made
 
 .gaebuild.example.made: src/example/* .gaedir.made
-	cp -r src/example/* $(GAEDIR)/
+	cp -r src/example $(GAEDIR)/
 	touch .gaebuild.example.made
 
 .gaedir.made:

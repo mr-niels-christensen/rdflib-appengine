@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='rdflib-appengine',
-      version = '0.6',
+      version = '1.0',
       description='Python distributible for using rdflib with NDB',
       author='Niels Christensen',
       packages=['rdflib_appengine',
