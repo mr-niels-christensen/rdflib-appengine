@@ -18,8 +18,8 @@ all: ide runlocal
 .PHONY: test
 test: .tests.made
 
-.tests.made: src/test/testrunner.py src/test/suite/*.py .pip.for.use.made
-	source .venv.for.use/bin/activate && src/test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./src/test/ #TODO: This is not very portable
+.tests.made: src/test/testrunner.py src/test/suite/*.py .gaebuild.made
+	src/test/testrunner.py $(shell dirname $(shell readlink $(shell which dev_appserver.py))) ./src/test/ $(GAEDIR) #TODO: This is not very portable
 	touch .tests.made
 
 .gaebuild.made: .gaebuild.example.made .gaebuild.srcmain.made
@@ -39,19 +39,12 @@ test: .tests.made
 .PHONY: ide
 ide: .pip.for.ide.made
 
-.pip.for.use.made: $(DISTFILE) .venv.for.use/bin/activate
-	source .venv.for.use/bin/activate && pip install $(DISTFILE)
-	touch .pip.for.use.made
-
 .PHONY: dist
 dist: $(DISTFILE)
 
 $(DISTFILE): $(SRCMAIN_FILES)
 	mkdir -p dist
 	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/)
-
-.venv.for.use/bin/activate:
-	virtualenv .venv.for.use
 
 .pip.for.ide.made: .venv.for.ide/bin/activate src/main/requirements.txt $(SRCMAIN_FILES)
 	source .venv.for.ide/bin/activate && (cd src/main/ && pip install -r requirements.txt)
