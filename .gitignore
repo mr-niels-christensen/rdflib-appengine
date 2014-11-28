@@ -2,12 +2,8 @@
 .project
 .settings
 .pydevproject
-SPARQLWrapper
-html5lib
-isodate
-libs/
-pkg_resources.py
-pyparsing.py
-rdflib
-six.py
 .*.made
+build/
+dist/
+.venv.*
+*.egg-info

@@ -48,13 +48,13 @@ dist: $(DISTFILE)
 
 $(DISTFILE): $(SRCMAIN_FILES)
 	mkdir -p dist
-	(cd src/main/python && ./setup.py sdist --dist-dir ../../../dist/)
+	(cd src/main/ && ./setup.py sdist --dist-dir ../../../dist/)
 
 .venv.for.use/bin/activate:
 	virtualenv .venv.for.use
 
-.pip.for.ide.made: .venv.for.ide/bin/activate src/main/python/requirements.txt $(SRCMAIN_FILES)
-	source .venv.for.ide/bin/activate && (cd src/main/python && pip install -r requirements.txt)
+.pip.for.ide.made: .venv.for.ide/bin/activate src/main/requirements.txt $(SRCMAIN_FILES)
+	source .venv.for.ide/bin/activate && (cd src/main/ && pip install -r requirements.txt)
 	touch .pip.for.ide.made
 
 .venv.for.ide/bin/activate:
