@@ -30,7 +30,8 @@ test: .tests.made
 	touch .gaebuild.srcmain.made
 
 .gaebuild.example.made: src/example/* .gaedir.made
-	cp -r src/example $(GAEDIR)/
+	cp -r src/example/*.yaml $(GAEDIR)/
+	cp -r src/example/*.py $(GAEDIR)/
 	touch .gaebuild.example.made
 
 .gaedir.made:
