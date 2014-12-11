@@ -178,8 +178,13 @@ class NDBStore(Store):
             logging.log(level, self._log.getvalue())
             self._log = StringIO()
         
-    def destroy(self, configuration):
-        pass
+    def destroy(self, _configuration):
+        more = True
+        cursor = None
+        while more:
+            (results, cursor, more) = GraphShard.query().filter(GraphShard.graph_ID == self._ID).fetch_page(20, keys_only = True, start_cursor=cursor)
+            logging.debug('Deleting {}'.format(results))
+            ndb.delete_multi(results)
         
     def addN(self, quads):
         #TODO: Handle splitting large graphs into two entities
