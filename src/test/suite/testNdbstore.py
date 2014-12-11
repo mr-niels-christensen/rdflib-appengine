@@ -59,6 +59,12 @@ class TestCase(unittest.TestCase):
         for pattern in patterns:
             self._assertSameMatches(st, pattern)
         
+    def testDestroy(self):
+        st = NDBStore(identifier = 'banana')
+        st.addN([(s, p, o, None) for (s, p, o) in _TRIPLES])
+        st.destroy(None)
+        self._assertSameSet(set(), st.triples((None, None, None), None))
+
     def _assertSameMatches(self, st, (s, p, o)):
         mine = _TRIPLES
         if s is not None:

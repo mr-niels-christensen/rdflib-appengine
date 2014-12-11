@@ -178,6 +178,9 @@ class NDBStore(Store):
             logging.log(level, self._log.getvalue())
             self._log = StringIO()
         
+    def destroy(self, configuration):
+        pass
+        
     def addN(self, quads):
         #TODO: Handle splitting large graphs into two entities
         #Note: quads is a generator, not a list. It cannot be traversed twice.
