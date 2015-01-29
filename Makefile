@@ -1,4 +1,4 @@
-MAJORMINOR := 1.1
+MAJORMINOR := 1.2
 
 SRCMAIN_FILES := $(shell find src/main -name "*.py")
 NAME := $(shell grep name src/main/setup.py | cut -d "'" -f 2)
