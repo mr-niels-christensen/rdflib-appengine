@@ -41,7 +41,7 @@ class TestCase(unittest.TestCase):
         st = ndbstore.NDBStore(identifier = 'alotofdata',
                                configuration = {'log' : False,
                                                 'no_of_subject_shards' : 16,
-                                                'no_of_shards_per_predicate': lambda (predicate): 16,})
+                                                'no_of_shards_per_predicate_default': 16,})
         st.addN(self._manyLargeQuads())
         
     def _manyLargeQuads(self):
