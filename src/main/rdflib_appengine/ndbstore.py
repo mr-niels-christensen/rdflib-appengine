@@ -21,6 +21,8 @@ from StringIO import StringIO
 from random import randrange
 from rdflib.plugins.sparql.evaluate import evalLazyJoin
 from rdflib.plugins.sparql import CUSTOM_EVALS
+from itertools import product
+from random import choice
 
 ANY = None #Convention used by rdflib
 
@@ -52,7 +54,7 @@ class GraphShard(ndb.Model):
        This method searches three layers of store in order:
          * a local WeakValueDictionary containing rdflib.Graph() objects (very, very fast)
          * The Memcache provided by NDB containing pickled rdflib.Graph() objects (needs unpickling, takes 0-300ms in my experience)
-         * NDB itself containing compressed N3 data (needs retrieval, decompression and parsing, takes 0-1500ms in my experience)
+         * NDB itself containing compressed N3 data (needs decompression and parsing, takes 0-1500ms in my experience)
        The method stores the returned object in the two first layers before returning.
        @return The rdflib.Graph() containing the triples in this GraphShard.
     '''    
@@ -99,6 +101,8 @@ _NO_OF_SHARDS_TO_NO_OF_HEX_DIGITS = { 1    : 0,
                                       256  : 2,
                                       4096 : 3,
                                      }
+
+_HEX_DIGITS = [str(i) for i in range(10)] + [chr(i) for i in range(ord('a'), ord('g'))] #Each of the 16 hex digits
 
 _VALID_NO_SHARDS = _NO_OF_SHARDS_TO_NO_OF_HEX_DIGITS.keys()
 
@@ -150,7 +154,7 @@ class NDBStore(Store):
         assert isinstance(log, bool), _CONF_ERR_MSG.format('log', [True, False], log)
         self._is_logging = log
         assert no_of_subject_shards in _VALID_NO_SHARDS, _CONF_ERR_MSG.format('no_of_subject_shards', _VALID_NO_SHARDS, no_of_subject_shards)
-        self._no_of_subject_shards = no_of_subject_shards
+        self._no_of_subject_shard_digits = _NO_OF_SHARDS_TO_NO_OF_HEX_DIGITS[no_of_subject_shards]
         assert no_of_shards_per_predicate_default in _VALID_NO_SHARDS, _CONF_ERR_MSG.format('no_of_shards_per_predicate_default', _VALID_NO_SHARDS, no_of_shards_per_predicate_default)
         self._no_of_shards_per_predicate_default = no_of_shards_per_predicate_default
         assert isinstance(no_of_shards_per_predicate_dict, dict), _CONF_ERR_MSG.format('no_of_shards_per_predicate_dict', 'a dict', no_of_shards_per_predicate_dict)
@@ -162,32 +166,29 @@ class NDBStore(Store):
         no_of_shards = self._no_of_shards_per_predicate_dict.get(predicate, self._no_of_shards_per_predicate_default)
         return _NO_OF_SHARDS_TO_NO_OF_HEX_DIGITS[no_of_shards]
     
-    def key_for(self, graph_ID, uri_ref, index):
-        '''Assemble an NDB key for the GraphShard containing triples relevant to the given parameters.
+    def keys_for(self, graph_ID, uri_ref, index):
+        '''Assemble all NDB keys for the GraphShards containing triples relevant to the given parameters.
            @param graph_ID: The name of the graph to get triples from, e.g. 'current'
            @param uri_ref: The rdflib.URIRef to get triples for
-           @param index: 0, 1 or 2 to indicate at which position the triples should have the given uri_ref.
-                         0=subject, 1=predicate, 2=object
-           @return An ndb.Key for the relevant GraphShard
+           @param index: 0, or 1 to indicate at which position the triples should have the given uri_ref.
+                         0=subject, 1=predicate
+           @return A list of ndb.Keys for the relevant GraphShards.
+                   Example Key: 'p-prov#endedAtTime_6f11f819383b6a6bb619fbea25b5696372ba0b62--newdata'
         '''
-        assert index in range(3), 'index was {}, must be one of 0 for subject, 1 for predicate, 2 for object'.format(index)
-        if index == 1: #Keep predicates completely separate
-            wiff = uri_ref.split('/')[-1].replace('-','')
-            if len(wiff) > 20:
-                wiff = wiff[-20:]
-            uri_ref_digest = '{}_{}'.format(wiff, sha1(uri_ref))#TODO
-        else: #Split into 16
-            uri_ref_digest = sha1(uri_ref)[-1]#TODO
-        return ndb.Key(GraphShard, '{}-{}-{}-{}'.format('spo'[index], uri_ref_digest, '', graph_ID))
+        assert index in range(2), 'index was {}, must be one of 0 for subject, 1 for predicate'.format(index)
+        if index == 1: #A predicate
+            no_of_hex_digits = self._hex_digits(uri_ref)
+            random_sub_shards = [''.join(t) for t in product(_HEX_DIGITS, repeat = no_of_hex_digits)]
+            #Keep last part of the URIRef as a "whiff". This is useful when inspecting data in GAE's datastore viewer
+            whiff = uri_ref.split('/')[-1].replace('-','')
+            if len(whiff) > 20:
+                whiff = whiff[-20:]
+            uri_ref_digest = '{}_{}'.format(whiff, sha1(uri_ref))#Example: prov#endedAtTime_6f11f819383b6a6bb619fbea25b5696372ba0b62
+        else: #A subject
+            uri_ref_digest = sha1(uri_ref)[-self._no_of_subject_shard_digits:]
+            random_sub_shards = ['']
+        return [ndb.Key(GraphShard, '{}-{}-{}-{}'.format('spo'[index], uri_ref_digest, r, graph_ID)) for r in random_sub_shards]
 
-    def keys_for(self, graph_ID, uri_ref, index):
-        '''Like key_for() but returns a list of ndb.Keys
-           This method was made to prepare for the situation where there will be more than
-           one GraphShard for the parameters. Sorry for the confusion.
-        '''
-        return [self.key_for(graph_ID, 
-                                   uri_ref,
-                                   index)]
     def log(self, msg):
         '''Add a message to this objects internal log.
            @param msg: The message, a string. It may contain newlines.
@@ -218,8 +219,10 @@ class NDBStore(Store):
         #Step 1: Collect the triples into the Graphs reflecting the GraphShards they will be added to.
         new_shard_dict = defaultdict(Graph)
         for (s, p, o, _) in quads: #Last component ignored as this Store is not context_aware
-            new_shard_dict[self.key_for(self._ID, s, 0)].add((s, p, o))
-            new_shard_dict[self.key_for(self._ID, p, 1)].add((s, p, o))
+            subject_shard = choice(self.keys_for(self._ID, s, 0))
+            new_shard_dict[subject_shard].add((s, p, o))
+            predicate_shard = choice(self.keys_for(self._ID, p, 1))
+            new_shard_dict[predicate_shard].add((s, p, o))
         keys = list(new_shard_dict.keys())
         #Step 2: Load all existing, corresponding GraphShards
         keys_models = zip(keys, ndb.get_multi(keys)) #TODO: Use async get
