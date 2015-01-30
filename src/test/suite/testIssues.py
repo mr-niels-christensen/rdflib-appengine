@@ -38,7 +38,10 @@ class TestCase(unittest.TestCase):
         self._assertSameSet(_TRIPLES[0:1], st.triples((None, None, None), None))
         
     def testALotOfData(self):
-        st = ndbstore.NDBStore(identifier = 'alotofdata')
+        st = ndbstore.NDBStore(identifier = 'alotofdata',
+                               configuration = {'log' : False,
+                                                'no_of_subject_shards' : 16,
+                                                'no_of_shards_per_predicate': lambda (predicate): 16,})
         st.addN(self._manyLargeQuads())
         
     def _manyLargeQuads(self):
