@@ -43,6 +43,7 @@ class TestCase(unittest.TestCase):
         st = ndbstore.NDBStore(identifier = 'alotofdata',
                                configuration = {'no_of_shards_per_predicate_dict': {_BAR: 16},})
         st.addN(self._manyLargeQuads())
+        self.assertEquals(10, len(self._sample_triples))
         g = Graph(store = st)
         for triple in self._sample_triples:
             self.assertIn(triple, g, 'Did not find {} in store'.format(triple))
