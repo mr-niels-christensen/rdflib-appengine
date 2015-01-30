@@ -120,9 +120,6 @@ class GraphShard(ndb.Model):
                                    uri_ref,
                                    index)]
 
-'''Default configuration parameter to NDBStores constructor'''
-_STD_CONFIG = {'log' : False}
-
 class NDBStore(Store):
     """
     A triple store using NDB on GAE (Google App Engine)
@@ -146,7 +143,7 @@ class NDBStore(Store):
       * Performs all joins as lazy joins, which is much faster for NDBStore in my experience.
     """
     
-    def __init__(self, configuration=_STD_CONFIG, identifier=None):
+    def __init__(self, configuration={}, identifier=None):
         '''@param configuration: A dict mapping 'log' to True or False
            @param identifier: A nonempty string or unicode. It's length must be <64
            to keep internal keys reasonably small.
@@ -159,8 +156,14 @@ class NDBStore(Store):
         self._ID = identifier
         self._log = StringIO()
         self._log_begin = time()
-        assert isinstance(configuration['log'], bool), "Configuration must set 'log' to True or False"
-        self._is_logging = configuration['log']
+        self._setup(**configuration)
+        
+    def _setup(self, 
+               log = False, 
+               no_of_subject_shards = 16, 
+               no_of_shards_per_predicate = lambda (predicate): 1):
+        assert isinstance(log, bool), "Configuration must set 'log' to True or False"
+        self._is_logging = log
 
     def log(self, msg):
         '''Add a message to this objects internal log.
