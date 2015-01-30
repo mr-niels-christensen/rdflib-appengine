@@ -5,6 +5,7 @@ from google.appengine.ext import testbed
 from rdflib.term import URIRef, Literal
 from rdflib import Graph
 from uuid import uuid4
+from random import sample
 
 _TRIPLES = [(URIRef('http://subject'), 
              URIRef('http://predicate'), 
@@ -27,6 +28,7 @@ class TestCase(unittest.TestCase):
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
+        self._sample_triples = set()
 
     def tearDown(self):
         self.testbed.deactivate()
@@ -39,14 +41,19 @@ class TestCase(unittest.TestCase):
         
     def testALotOfData(self):
         st = ndbstore.NDBStore(identifier = 'alotofdata',
-                               configuration = {'log' : False,
-                                                'no_of_subject_shards' : 16,
-                                                'no_of_shards_per_predicate_default': 16,})
+                               configuration = {'no_of_shards_per_predicate_dict': {_BAR: 16},})
         st.addN(self._manyLargeQuads())
+        g = Graph(store = st)
+        for triple in self._sample_triples:
+            self.assertIn(triple, g, 'Did not find {} in store'.format(triple))
         
     def _manyLargeQuads(self):
+        to_be_sampled = sample(xrange(1000), 10)
         for i in range(1000):
-            yield (_foo(i), _BAR, _long_random_literal(), None)
+            quad = (_foo(i), _BAR, _long_random_literal(), None)
+            if i in to_be_sampled:
+                self._sample_triples.add(quad[0:3])
+            yield quad
     
     def _assertSameSet(self, triple_list, quad_generator):
         self.assertEquals(set(triple_list), set([t for (t, _) in quad_generator]))
