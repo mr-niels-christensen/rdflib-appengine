@@ -62,7 +62,7 @@ clean: distclean
     
 .PHONY: distclean
 distclean:
-	rm .*.made
+	rm -f .*.made
 	rm -rf dist
 
     
