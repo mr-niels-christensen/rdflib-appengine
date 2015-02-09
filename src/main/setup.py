@@ -7,7 +7,7 @@ def readme():
         return f.read()
 
 setup(name='rdflib-appengine',
-      version = '1.2',
+      version = '1.2.0',
       description='Python distributible for using rdflib with NDB',
       long_description=readme(),
       author='Niels Christensen',
