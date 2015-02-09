@@ -3,6 +3,7 @@ MAJORMINOR := 1.2.0
 SRCMAIN_FILES := $(shell find src/main -name "*.py")
 NAME := $(shell grep name src/main/setup.py | cut -d "'" -f 2)
 DISTFILE := dist/$(NAME)-$(MAJORMINOR).tar.gz
+WHEEL_FILE := dist/rdflib_appengine-$(MAJORMINOR)-py2-none-any.whl
 GAEDIR := build/rdflib-appengine-$(MAJORMINOR)
 
 .PHONY: runlocal
@@ -46,7 +47,8 @@ dist: $(DISTFILE)
 
 $(DISTFILE): $(SRCMAIN_FILES)
 	mkdir -p dist
-	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/)
+	mkdir -p bdistbuild
+	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/ --bdist-dir ../../bdistbuild)
 
 .pip.for.ide.made: .venv.for.ide/bin/activate src/main/requirements.txt $(SRCMAIN_FILES)
 	source .venv.for.ide/bin/activate && (cd src/main/ && pip install -r requirements.txt)
@@ -54,6 +56,13 @@ $(DISTFILE): $(SRCMAIN_FILES)
 
 .venv.for.ide/bin/activate:
 	virtualenv .venv.for.ide
+
+.PHONY: wheel
+wheel: $(WHEEL_FILE)
+
+$(WHEEL_FILE):
+	mkdir -p dist
+	(cd src/main/ && ./setup.py bdist_wheel --dist-dir ../../dist/)
 
 .PHONY: clean
 clean: distclean
