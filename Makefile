@@ -64,9 +64,9 @@ $(WHEEL_FILE): $(SRCMAIN_FILES) test
 	mkdir -p dist
 	(cd src/main/ && ./setup.py bdist_wheel --dist-dir ../../dist/ --bdist-dir ../../bdistbuild)
 
-.PHONY: testpypi
-testpypi:
-	(cd src/main/ && ./setup.py register -r https://testpypi.python.org/pypi bdist_wheel --dist-dir ../../dist/ --bdist-dir ../../bdistbuild upload -r https://testpypi.python.org/pypi)
+.PHONY: pypi
+pypi: $(SRCMAIN_FILES) test
+	(cd src/main/ && ./setup.py register bdist_wheel --dist-dir ../../dist/ --bdist-dir ../../bdistbuild upload)
 
 .PHONY: clean
 clean: distclean
