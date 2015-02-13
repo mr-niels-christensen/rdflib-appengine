@@ -48,7 +48,7 @@ dist: $(DISTFILE)
 $(DISTFILE): $(SRCMAIN_FILES)
 	mkdir -p dist
 	mkdir -p bdistbuild
-	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/ --bdist-dir ../../bdistbuild)
+	(cd src/main/ && ./setup.py sdist --dist-dir ../../dist/ )
 
 .pip.for.ide.made: .venv.for.ide/bin/activate src/main/requirements.txt $(SRCMAIN_FILES)
 	source .venv.for.ide/bin/activate && (cd src/main/ && pip install -r requirements.txt)
@@ -60,9 +60,9 @@ $(DISTFILE): $(SRCMAIN_FILES)
 .PHONY: wheel
 wheel: $(WHEEL_FILE)
 
-$(WHEEL_FILE):
+$(WHEEL_FILE): $(SRCMAIN_FILES) test
 	mkdir -p dist
-	(cd src/main/ && ./setup.py bdist_wheel --dist-dir ../../dist/)
+	(cd src/main/ && ./setup.py bdist_wheel --dist-dir ../../dist/ --bdist-dir ../../bdistbuild)
 
 .PHONY: clean
 clean: distclean
