@@ -8,6 +8,7 @@ To use this project your application should run on GAE using Python 2.7.
 Assuming that you are familiar with rdflib (https://rdflib.readthedocs.org/en/latest/), to get started with this project, simply create a graph like this:
 
 .. code:: python
+
   from rdflib import Graph
   from rdflib_appengine.ndbstore import NDBStore
   g = Graph(store = NDBStore(identifier = 'my_first_store'))
